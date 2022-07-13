@@ -49,3 +49,7 @@ class Net(nn.Module):
         x = torch.sigmoid(self.linear1(x))
         x = self.linear2(x)
         return x
+
+clf=Net(input_dim,hidden_dim,output_dim)
+
+print(clf.parameters)
