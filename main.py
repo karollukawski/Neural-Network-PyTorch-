@@ -17,18 +17,22 @@ print(X_train.shape, X_test.shape, Y_train.shape, Y_test.shape)
 
 class Data(Dataset):
     def __init__(self):
-        self.X=torch.from_numpy(X_train)
-        self.Y=torch.from_numpy(Y_train)
-        self.len=self.X.shape[0]
+        self.X = torch.from_numpy(X_train)
+        self.Y = torch.from_numpy(Y_train)
+        self.len = self.X.shape[0]
     def __getitem__(self, index):
         return self.X[index], self.Y[index]
     def __len__(self):
         return self.len
 
 data=Data()
-loader=DataLoader(dataset=data,batch_size=64)
+loader = DataLoader(dataset=data,batch_size=64)
 
 print(data.X[0:5])
 print(data.X.shape)
 print(data.Y[0:5])
 print(data.Y.shape)
+
+input_dim = 4
+hidden_dim = 25
+output_dim = 3
