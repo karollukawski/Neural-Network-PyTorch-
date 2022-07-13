@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset, DataLoader
+import torch.nn as nn
 
 X, Y = make_classification(n_features=4, n_classes=3, n_redundant=0, n_informative=3, n_clusters_per_class=2)
 
@@ -36,3 +37,15 @@ print(data.Y.shape)
 input_dim = 4
 hidden_dim = 25
 output_dim = 3
+
+
+class Net(nn.Module):
+    def __init__(self, input, H, output):
+        super(Net, self).__init__()
+        self.linear1 = nn.Linear(input, H)
+        self.linear2 = nn.Linear(H, output)
+
+    def forward(self, x):
+        x = torch.sigmoid(self.linear1(x))
+        x = self.linear2(x)
+        return x
