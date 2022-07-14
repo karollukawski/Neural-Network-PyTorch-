@@ -45,9 +45,10 @@ hidden_dim = 25
 output_dim = 3
 
 
-class Net(nn.Module):
+class NeuralNetwork(nn.Module):
+
     def __init__(self, input, H, output):
-        super(Net, self).__init__()
+        super(NeuralNetwork, self).__init__()
         self.linear1 = nn.Linear(input, H)
         self.linear2 = nn.Linear(H, output)
 
@@ -56,22 +57,29 @@ class Net(nn.Module):
         x = self.linear2(x)
         return x
 
-        clf = Net(input_dim, hidden_dim, output_dim)
 
-        print(clf.parameters)
+clf = NeuralNetwork(input_dim, hidden_dim, output_dim)
 
-        criterion = nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(clf.parameters(), lr=0.1)
+print(clf.parameters)
 
-        learning_rate = 0.1
-        loss_list = []
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(clf.parameters(), lr=0.1)
 
-        for i in range(1000):
-            y_pred = clf(x)
-            loss = criterion(y_pred, y)
-            loss_list.append(loss.item())
-            clf.zero_grad()
-            loss.backward()
-            with torch.no_grad():
-                for param in clf.parameters():
-                    param -= learning_rate * param.grad
+learning_rate = 0.1
+loss_list = []
+
+for i in range(1000):
+    y_pred = clf(x)
+    loss = criterion(y_pred, y)
+    loss_list.append(loss.item())
+    clf.zero_grad()
+    loss.backward()
+    with torch.no_grad():
+        for param in clf.parameters():
+            param -= learning_rate * param.grad
+
+# step = np.linspace(0, 1000, 1000)
+# plt.plot(step, np.array(loss_list))
+# plt.show()
+
+
