@@ -53,3 +53,6 @@ class Net(nn.Module):
 clf=Net(input_dim,hidden_dim,output_dim)
 
 print(clf.parameters)
+
+criterion=nn.CrossEntropyLoss()
+optimizer=torch.optim.SGD(clf.parameters(), lr=0.1)
