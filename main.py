@@ -4,11 +4,12 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
+import numpy as np
 
 X, Y = make_classification(n_features=4, n_classes=3, n_redundant=0, n_informative=3, n_clusters_per_class=2)
 
 plt.title("Multi-class data, 4 informative features, 3 classes", fontsize="large")
-plt.scatter(X[:,0], X[:,1], marker="o", c=Y, s=25, edgecolor="k")
+plt.scatter(X[:, 0], X[:, 1], marker="o", c=Y, s=25, edgecolor="k")
 
 plt.show()
 
@@ -16,18 +17,23 @@ X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.33, random
 
 print(X_train.shape, X_test.shape, Y_train.shape, Y_test.shape)
 
+
 class Data(Dataset):
     def __init__(self):
         self.X = torch.from_numpy(X_train)
         self.Y = torch.from_numpy(Y_train)
         self.len = self.X.shape[0]
+
     def __getitem__(self, index):
         return self.X[index], self.Y[index]
+
     def __len__(self):
         return self.len
 
-data=Data()
-loader = DataLoader(dataset=data,batch_size=64)
+
+data = Data()
+
+loader = DataLoader(dataset=data, batch_size=64)
 
 print(data.X[0:5])
 print(data.X.shape)
@@ -50,9 +56,22 @@ class Net(nn.Module):
         x = self.linear2(x)
         return x
 
-clf=Net(input_dim,hidden_dim,output_dim)
+        clf = Net(input_dim, hidden_dim, output_dim)
 
-print(clf.parameters)
+        print(clf.parameters)
 
-criterion=nn.CrossEntropyLoss()
-optimizer=torch.optim.SGD(clf.parameters(), lr=0.1)
+        criterion = nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(clf.parameters(), lr=0.1)
+
+        learning_rate = 0.1
+        loss_list = []
+
+        for i in range(1000):
+            y_pred = clf(x)
+            loss = criterion(y_pred, y)
+            loss_list.append(loss.item())
+            clf.zero_grad()
+            loss.backward()
+            with torch.no_grad():
+                for param in clf.parameters():
+                    param -= learning_rate * param.grad
