@@ -78,8 +78,17 @@ for i in range(1000):
         for param in clf.parameters():
             param -= learning_rate * param.grad
 
-# step = np.linspace(0, 1000, 1000)
-# plt.plot(step, np.array(loss_list))
-# plt.show()
+step = np.linspace(0, 1000, 1000)
+plt.plot(step, np.array(loss_list))
+plt.show()
 
-
+params = list(clf.parameters())
+w = params[0].detach().numpy()[0]
+b = params[1].detach().numpy()[0]
+t = params[3].detach().numpy()[0]
+plt.scatter(X[:, 0], X[:, 1], c=Y, cmap='jet')
+u = np.linspace(X[:, 0].min(), X[:, 0].max(), 2)
+plt.plot(u, (0.5-b-w[0]*u)/w[1])
+plt.plot(u, (0.5-t-w[0]*u)/w[1])
+plt.xlim(X[:, 0].min()-0.5, X[:, 0].max()+0.5)
+plt.ylim(X[:, 1].min()-0.5, X[:, 1].max()+0.5)
