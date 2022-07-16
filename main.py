@@ -92,3 +92,9 @@ plt.plot(u, (0.5-b-w[0]*u)/w[1])
 plt.plot(u, (0.5-t-w[0]*u)/w[1])
 plt.xlim(X[:, 0].min()-0.5, X[:, 0].max()+0.5)
 plt.ylim(X[:, 1].min()-0.5, X[:, 1].max()+0.5)
+
+x_val = torch.from_numpy(X_test)
+z = clf(x_val)
+yhat = torch.max(z.data, 1)
+yhat[1]
+
