@@ -6,16 +6,29 @@ from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import numpy as np
 
+#Creating the dataset for classification
+
 X, Y = make_classification(n_features=4, n_classes=3, n_redundant=0, n_informative=3, n_clusters_per_class=2)
+
+#Visualizing the dataset
 
 plt.title("Multi-class data, 4 informative features, 3 classes", fontsize="large")
 plt.scatter(X[:, 0], X[:, 1], marker="o", c=Y, s=25, edgecolor="k")
 
 plt.show()
 
+#Spliting the dataset into test and train sets
+
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.33, random_state=123)
 
 print(X_train.shape, X_test.shape, Y_train.shape, Y_test.shape)
+
+#Defining the train data as a PyTorch tensor
+
+Y_test = torch.from_numpy(X_test)
+Y_test = torch.from_numpy(np.asarray(Y_test))
+
+#Putting the data through the DataLoader
 
 
 class Data(Dataset):
@@ -40,9 +53,13 @@ print(data.X.shape)
 print(data.Y[0:5])
 print(data.Y.shape)
 
-input_dim = 4
-hidden_dim = 25
-output_dim = 3
+#Defining the dimensions of the network
+
+input_dim = 4 #how many variables are in the dataset
+hidden_dim = 25 #hidden layers
+output_dim = 3 #number of classes
+
+#Defining the neuraal network class
 
 
 class NeuralNetwork(nn.Module):
@@ -57,13 +74,19 @@ class NeuralNetwork(nn.Module):
         x = self.linear2(x)
         return x
 
+#Instantiating the classifier
+
 
 clf = NeuralNetwork(input_dim, hidden_dim, output_dim)
 
 print(clf.parameters)
 
+#Defining the criterion to calculate gradients of paramteres and optimizers to update the parameters
+
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(clf.parameters(), lr=0.1)
+
+#Training model
 
 learning_rate = 0.1
 loss_list = []
@@ -78,9 +101,13 @@ for i in range(1000):
         for param in clf.parameters():
             param -= learning_rate * param.grad
 
+#Visualizing loss curve
+
 step = np.linspace(0, 1000, 1000)
 plt.plot(step, np.array(loss_list))
 plt.show()
+
+#Defining decision boundaries
 
 params = list(clf.parameters())
 w = params[0].detach().numpy()[0]
@@ -92,6 +119,8 @@ plt.plot(u, (0.5-b-w[0]*u)/w[1])
 plt.plot(u, (0.5-t-w[0]*u)/w[1])
 plt.xlim(X[:, 0].min()-0.5, X[:, 0].max()+0.5)
 plt.ylim(X[:, 1].min()-0.5, X[:, 1].max()+0.5)
+
+#Making predictions
 
 x_val = torch.from_numpy(X_test)
 z = clf(x_val)
