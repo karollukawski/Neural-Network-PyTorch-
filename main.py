@@ -1,3 +1,5 @@
+import itertools
+
 from sklearn.datasets import make_classification
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
@@ -5,125 +7,184 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import numpy as np
+import warnings
+warnings.filterwarnings("ignore")
+from torch import nn
+from torch import optim
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 
 #Creating the dataset for classification
 
-X, Y = make_classification(n_features=4, n_classes=3, n_redundant=0, n_informative=3, n_clusters_per_class=2)
+X, y = make_classification(n_samples=10000, n_features=4, n_classes=3, n_redundant=0, n_informative=3, n_clusters_per_class=2)
 
-#Visualizing the dataset
-
-plt.title("Multi-class data, 4 informative features, 3 classes", fontsize="large")
-plt.scatter(X[:, 0], X[:, 1], marker="o", c=Y, s=25, edgecolor="k")
-
-plt.show()
-
+# #Visualizing the dataset
+#
+# plt.title("Multi-class data, 4 informative features, 3 classes", fontsize="large")
+# plt.scatter(X[:, 0], X[:, 1], marker="o", c=Y, s=25, edgecolor="k")
+#
+# plt.show()
+#
 #Spliting the dataset into test and train sets
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.33, random_state=123)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=26)
 
-print(X_train.shape, X_test.shape, Y_train.shape, Y_test.shape)
+# Visualize the data.
+fig, (train_ax, test_ax) = plt.subplots(ncols=2, sharex=True, sharey=True, figsize=(10, 5))
+train_ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=plt.cm.Spectral)
+train_ax.set_title("Training Data")
+train_ax.set_xlabel("Feature #0")
+train_ax.set_ylabel("Feature #1")
 
-#Defining the train data as a PyTorch tensor
+test_ax.scatter(X_test[:, 0], X_test[:, 1], c=y_test)
+test_ax.set_xlabel("Feature #0")
+test_ax.set_title("Testing data")
+plt.show()
 
-Y_test = torch.from_numpy(X_test)
-Y_test = torch.from_numpy(np.asarray(Y_test))
-
-#Putting the data through the DataLoader
-
-
+# Convert data to torch tensors
 class Data(Dataset):
-    def __init__(self):
-        self.X = torch.from_numpy(X_train)
-        self.Y = torch.from_numpy(Y_train)
+    def __init__(self, X, y):
+        self.X = torch.from_numpy(X.astype(np.float32))
+        self.y = torch.from_numpy(y.astype(np.float32))
         self.len = self.X.shape[0]
 
     def __getitem__(self, index):
-        return self.X[index], self.Y[index]
+        return self.X[index], self.y[index]
 
     def __len__(self):
         return self.len
 
+batch_size = 2
 
-data = Data()
+# Instantiate training and test data
+train_data = Data(X_train, y_train)
+train_dataloader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True)
 
-loader = DataLoader(dataset=data, batch_size=64)
+test_data = Data(X_test, y_test)
+test_dataloader = DataLoader(dataset=test_data, batch_size=batch_size, shuffle=True)
 
-print(data.X[0:5])
-print(data.X.shape)
-print(data.Y[0:5])
-print(data.Y.shape)
+# Check it's working
+for batch, (X, y) in enumerate(train_dataloader):
+    print(f"Batch: {batch+1}")
+    print(f"X shape: {X.shape}")
+    print(f"y shape: {y.shape}")
+    break
 
-#Defining the dimensions of the network
+print("batch complete")
 
-input_dim = 4 #how many variables are in the dataset
-hidden_dim = 25 #hidden layers
-output_dim = 3 #number of classes
-
-#Defining the neuraal network class
+input_dim = 4
+hidden_dim = 2
+output_dim = 1
 
 
 class NeuralNetwork(nn.Module):
-
-    def __init__(self, input, H, output):
+    def __init__(self, input_dim, hidden_dim, output_dim):
         super(NeuralNetwork, self).__init__()
-        self.linear1 = nn.Linear(input, H)
-        self.linear2 = nn.Linear(H, output)
+        self.layer_1 = nn.Linear(input_dim, hidden_dim)
+        nn.init.kaiming_uniform_(self.layer_1.weight, nonlinearity="relu")
+        self.layer_2 = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
-        x = torch.sigmoid(self.linear1(x))
-        x = self.linear2(x)
+        x = torch.nn.functional.relu(self.layer_1(x))
+        x = torch.nn.functional.sigmoid(self.layer_2(x))
+
         return x
 
-#Instantiating the classifier
 
-
-clf = NeuralNetwork(input_dim, hidden_dim, output_dim)
-
-print(clf.parameters)
-
-#Defining the criterion to calculate gradients of paramteres and optimizers to update the parameters
-
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(clf.parameters(), lr=0.1)
-
-#Training model
+model = NeuralNetwork(input_dim, hidden_dim, output_dim)
+print(model)
 
 learning_rate = 0.1
-loss_list = []
 
-for i in range(1000):
-    y_pred = clf(x)
-    loss = criterion(y_pred, y)
-    loss_list.append(loss.item())
-    clf.zero_grad()
-    loss.backward()
-    with torch.no_grad():
-        for param in clf.parameters():
-            param -= learning_rate * param.grad
+loss_fn = nn.BCELoss()
 
-#Visualizing loss curve
+optimizer = torch.optim.SGD(model.parameters(), learning_rate)
 
-step = np.linspace(0, 1000, 1000)
-plt.plot(step, np.array(loss_list))
+num_epochs = 100
+loss_values = []
+
+for epoch in range(num_epochs):
+    for X, y in train_dataloader:
+# zero the parameter gradients
+        optimizer.zero_grad()
+
+# forward + backward + optimize
+        pred = model(X)
+        loss = loss_fn(pred, y.unsqueeze(-1))
+        loss_values.append(loss.item())
+        loss.backward()
+        optimizer.step()
+
+print("Training Complete")
+
+step = np.linspace(0, 100, 10500)
+
+fig, ax = plt.subplots(figsize=(8,5))
+plt.plot(step, np.array(loss_values))
+plt.title("Step-wise Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
 plt.show()
 
-#Defining decision boundaries
+y_pred = np.array(np.zeros)
 
-params = list(clf.parameters())
-w = params[0].detach().numpy()[0]
-b = params[1].detach().numpy()[0]
-t = params[3].detach().numpy()[0]
-plt.scatter(X[:, 0], X[:, 1], c=Y, cmap='jet')
-u = np.linspace(X[:, 0].min(), X[:, 0].max(), 2)
-plt.plot(u, (0.5-b-w[0]*u)/w[1])
-plt.plot(u, (0.5-t-w[0]*u)/w[1])
-plt.xlim(X[:, 0].min()-0.5, X[:, 0].max()+0.5)
-plt.ylim(X[:, 1].min()-0.5, X[:, 1].max()+0.5)
+total = 0
+correct = 0
 
-#Making predictions
+with torch.no_grad():
+    for X, y in test_dataloader:
+        outputs = model(X)
+        predicted = np.where(outputs < 0.5, 0, 1)
+        predicted = list(itertools.chain(*predicted))
+        y_pred.append(predicted)
+        y_test.append(y)
+        total += y.size(0)
+        correct += (predicted == y.numpy()).sum().item()
 
-x_val = torch.from_numpy(X_test)
-z = clf(x_val)
-yhat = torch.max(z.data, 1)
-yhat[1]
+print(f'Accuracy of the network on the 3300 test instances: {100 * correct // total}%')
 
+y_pred = list(itertools.chain(*y_pred))
+y_test = list(itertools.chain(*y_test))
+
+
+print(classification_report(y_test, y_pred))
+
+cf_matrix = confusion_matrix(y_test, y_pred)
+
+plt.subplots(figsize=(8, 5))
+
+sns.heatmap(cf_matrix, annot=True, cbar=False, fmt="g")
+
+plt.show()
+
+
+###########################################
+# x = np.linspace(-5, 5, 50)
+# z = 1/(1 + np.exp(-x))
+#
+#
+#
+#
+# plt.subplots(figsize=(8, 5))
+# plt.plot(x, z)
+# plt.grid()
+# plt.show()
+#
+# x = np.linspace(-5, 5, 50)
+# z = np.tanh(x)
+#
+#
+# plt.subplots(figsize=(8, 5))
+# plt.plot(x, z)
+# plt.grid()
+# plt.show()
+#
+# x = np.linspace(-5, 5, 50)
+# z = [max(0, i) for i in x]
+#
+#
+# plt.subplots(figsize=(8, 5))
+# plt.plot(x, z)
+# plt.grid()
+# plt.show()
