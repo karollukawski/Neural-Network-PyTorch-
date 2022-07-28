@@ -10,22 +10,21 @@ import warnings
 warnings.filterwarnings("ignore")
 from torch import nn
 from torch import optim
-from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 
-#Creating the dataset for classification
+# Creating the dataset for classification
 
 X, y = make_classification(n_samples=10000, n_features=4, n_classes=3, n_redundant=0, n_informative=3, n_clusters_per_class=2)
 
-#Visualizing the dataset
+# Visualizing the dataset
 
 plt.title("Multi-class data, 4 informative features, 3 classes", fontsize="large")
 plt.scatter(X[:, 0], X[:, 1], marker="o", c=y, s=25, edgecolor="k")
 
 plt.show()
 
-#Spliting the dataset into test and train sets
+# Splitting the dataset into test and train sets
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=26)
 
@@ -73,15 +72,15 @@ for batch, (X, y) in enumerate(train_dataloader):
     print(f"y shape: {y.shape}")
     break
 
-print("batch complete")
+print("Batch complete")
 
-#Defining the dimensions of the network
+# Defining the dimensions of the network
 
 input_dim = 4
 hidden_dim = 2
 output_dim = 1
 
-#Defining the neural network class
+# Defining the neural network class
 
 class NeuralNetwork(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
@@ -96,12 +95,12 @@ class NeuralNetwork(nn.Module):
 
         return x
 
-#Instantiating the classifier
+# Instantiating the classifier
 
 model = NeuralNetwork(input_dim, hidden_dim, output_dim)
 print(model)
 
-#Training model
+# Training model
 
 learning_rate = 0.1
 
@@ -126,9 +125,9 @@ for epoch in range(num_epochs):
 
 print("Training Complete")
 
-#134 sth wrong
+# Visualizing loss curve
 
-step = np.linspace(0, 100, 10500)
+step = np.linspace(0, 100, 335000)
 
 fig, ax = plt.subplots(figsize=(8,5))
 plt.plot(step, np.array(loss_values))
@@ -147,18 +146,14 @@ with torch.no_grad():
         outputs = model(X)
         predicted = np.where(outputs < 0.5, 0, 1)
         predicted = list(itertools.chain(*predicted))
-        y_pred.append(predicted)
-        y_test.append(y)
+        y_pred = np.append(predicted, 3)
+        y_test = np.append(y, 3)
         total += y.size(0)
         correct += (predicted == y.numpy()).sum().item()
 
 print(f'Accuracy of the network on the 3300 test instances: {100 * correct // total}%')
 
-y_pred = list(itertools.chain(*y_pred))
-y_test = list(itertools.chain(*y_test))
-
-
-print(classification_report(y_test, y_pred))
+# Showing performing of our model - confusion matrix
 
 cf_matrix = confusion_matrix(y_test, y_pred)
 
